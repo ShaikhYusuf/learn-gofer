@@ -1,32 +1,84 @@
-<div class="container">
-  <div class="sidebar" [class.collapsed]="isCollapsed">
-    <button (click)="toggleSidebar()">Menu</button>
+<div class="app-layout">
+  <!-- Sticky Header -->
+  <header class="app-header">
+    <div class="app-brand">
+      <button class="sidebar-toggle" *ngIf="isLoggedIn()" (click)="toggleSidebar()" aria-label="Toggle Navigation">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="app-title">{{ siteTitle }}</span>
+    </div>
+    <div class="header-actions">
+      <button mat-button (click)="navigate('/intro')" *ngIf="isLoggedIn()">
+        <mat-icon>home</mat-icon>
+        <span>Home</span>
+      </button>
+      <!-- Logged in: user info + logout -->
+      <ng-container *ngIf="isLoggedIn()">
+        <span class="user-greeting">Welcome, <strong>{{ getUserName() }}</strong></span>
+        <button mat-button class="btn-logout" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </ng-container>
+      <!-- Not logged in: login/register -->
+      <ng-container *ngIf="!isLoggedIn()">
+        <button mat-button class="btn-login" (click)="navigate('/register')">
+          <mat-icon>person</mat-icon>
+          <span>Login / Register</span>
+        </button>
+      </ng-container>
+    </div>
+  </header>
 
-    <mat-nav-list>
-      @for (item of menuItems; track item) {
-        <mat-list-item>
-          <mat-icon
-            [class.disabled]="!item.submenu || item.submenu.length === 0"
-            (click)="item.submenu!.length ? toggleSubMenu(item) : null">
-            {{ item.expanded ? 'expand_less' : 'expand_more' }}
-          </mat-icon>
-          <a [routerLink]="item.link" routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }">{{ item.name }}</a>
-          @if (item.expanded) {
-            <mat-list class="submenu">
-              @for (subItem of item.submenu; track subItem) {
-                <mat-list-item>
-                  <a [routerLink]="subItem.link" routerLinkActive="active"
-                  [routerLinkActiveOptions]="{ exact: true }">{{ subItem.name }}</a>
-                </mat-list-item>
-              }
-            </mat-list>
-          }
-        </mat-list-item>
-      }
-    </mat-nav-list>
-  </div>
-  <div class="content">
-    <router-outlet></router-outlet>
+  <div class="app-body">
+    <!-- Sidebar Backdrop for mobile -->
+    <div class="sidebar-backdrop" *ngIf="isSidebarActive && isLoggedIn()" (click)="toggleSidebar()"></div>
+
+    <!-- Sidebar Navigation (only when logged in) -->
+    <aside class="app-sidebar" *ngIf="isLoggedIn()" [class.sidebar-open]="isSidebarActive">
+      <nav class="sidebar-menu">
+        <div class="menu-item" *ngFor="let item of menuItems">
+          <div class="menu-link-wrapper" [class.active]="selectedLessonId === item.id">
+            <a (click)="selectLesson(item.id, item.link)" class="menu-link">
+              <mat-icon class="menu-icon">{{ item.id === 'intro' ? 'info' : 'bookmark' }}</mat-icon>
+              <span>{{ item.name }}</span>
+            </a>
+
+            <!-- Submenu for Explanation, Example, Problem, Quiz if active -->
+            <div class="lesson-submenus" *ngIf="item.submenu && item.submenu.length > 0 && selectedLessonId === item.id">
+              <a *ngFor="let sub of item.submenu" (click)="navigate(sub.link)" class="submenu-link">
+                <mat-icon>{{ sub.icon }}</mat-icon>
+                <span>{{ sub.name }}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-content" [class.sidebar-collapsed]="!isLoggedIn() || !isSidebarActive">
+      <div class="content-container">
+        <router-outlet></router-outlet>
+
+        <!-- Lesson Navigation Footer -->
+        <div class="lesson-navigation" *ngIf="isLoggedIn() && getCurrentStepIndex() >= 0">
+          <div class="nav-progress">
+            <span class="step-indicator">{{ getStepIndicatorText() }}</span>
+          </div>
+          <div class="nav-buttons">
+            <button class="nav-btn nav-btn-prev" *ngIf="hasPreviousStep()" (click)="goToPreviousStep()">
+              <mat-icon>arrow_back</mat-icon>
+              <span>{{ getPreviousButtonText() }}</span>
+            </button>
+            <div class="nav-spacer" *ngIf="!hasPreviousStep()"></div>
+            <button class="nav-btn nav-btn-next" *ngIf="hasNextStep()" (click)="goToNextStep()">
+              <span>{{ getNextButtonText() }}</span>
+              <mat-icon>arrow_forward</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 </div>
